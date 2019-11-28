@@ -45,6 +45,9 @@ import Grid from './components/layouts/Grid'
 import Slot from './components/layouts/Slot'
 import Article from './components/layouts/Article'
 
+// Charts
+import ScatterPlot from './components/charts/ScatterPlot'
+
 class App extends React.Component {
   constructor () {
     super()
@@ -60,6 +63,50 @@ class App extends React.Component {
 
     return (
       <div className={`${c}`}>
+
+        {/* * * * * * * * * * * * * * * * * * * * * * * * *
+          *
+          * CHARTS
+          *
+          * * * * * * * * * * * * * * * * * * * * * * * * */}
+        <h2 className={`${c}__family-name`}>Charts</h2>
+
+        {/* Scatterplot */}
+        <h3 className={`${c}__component-name`}>ScatterPlot</h3>
+        <div className={`${c}__comp-col`}>
+          <div className={`${c}__comp-slot`}>
+            <div className={`${c}__component`}>
+              <ScatterPlot
+                title="Mon super graphique"
+                description="Production de pommes par rapport à la production d'oranges"
+                height={500}
+                radius={8}
+                fill='#e91845'
+                animation_duration={500}
+                animation_delay={500}
+                show_x_grid
+                show_y_grid
+                x_ticks={{ mode: 'every', value: 9 }}
+                y_ticks={{ mode: 'number', value: 4 }}
+                bounds={{ min_x: 0, min_y: 0, max_y: 110 }}
+                autoplay animated
+                data={Array.from({ length: 100 }, () => Array.from({ length: 42 }, () => {
+                    return {
+                      x_value: Math.floor(Math.random() * Math.floor(Math.random() * 100)),
+                      y_value: Math.floor(Math.random() * Math.floor(Math.random() * 100)),
+                      radius: 3 + Math.floor(Math.random() * 17),
+                      opacity: Math.random() > 0.5 ? 0.7 : 0.3,
+                      fill: Math.random() > 0.5 ? 'limegreen' : undefined
+                    }
+                  }
+                ))}
+              />
+            </div>
+            <div className={`${c}__component-props`}>
+              title, description, height, data, bounds, x_ticks, y_ticks, show_x_grid, show_y_grid, animated, autoplay, animation_duration, animation_delay, fill, stroke, radiuss
+            </div>
+          </div>
+        </div>
 
         {/* * * * * * * * * * * * * * * * * * * * * * * * *
           *
