@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import React from 'react'
 import PropTypes from 'prop-types'
 import * as d3 from 'd3'
 import BlockTitle from '../../text-levels/BlockTitle'
@@ -24,31 +24,10 @@ export default class ScatterPlot extends Chart {
    * CONSTRUCTOR
    *
    * * * * * * * * * * * * * * * * */
-  constructor () {
-    super()
-    this.c = 'lblb-chart_scatter-plot'
-    this.state = {
-      index: 0
-    }
-    this.appendSvg = this.appendSvg.bind(this)
-    this.defineScales = this.defineScales.bind(this)
-    this.drawChart = this.drawChart.bind(this)
-    this.drawAxes = this.drawAxes.bind(this)
-    this.drawGrid = this.drawGrid.bind(this)
-  }
+  constructor (props) {
+    super(props)
 
-  getWidth () {
-    return d3.select(this.$root).node().parentNode.getBoundingClientRect().width
-  }
-
-  shouldComponentUpdate (prev, next) {
-    return false
-  }
-
-  componentDidMount () {
-
-    console.log(this.props)
-
+    this.c = ['lblb-chart', 'lblb-chart_scatter-plot']
 
     this.margin = {
       left: 40,
@@ -56,46 +35,33 @@ export default class ScatterPlot extends Chart {
       right: 20,
       top: 20
     }
-    this.setState({ width: this.getWidth(), height: this.props.height}, () => {
-      this.drawChart()
-      this.animate()
-    })
+    this.duration = typeof props.animation_duration !== 'undefined' ? props.animation_duration : 200
+    this.delay = typeof props.animation_delay !== 'undefined' ? props.animation_delay : 500
 
-    let resizedFn;
-    window.addEventListener('resize', () => {
-        clearTimeout(resizedFn);
-        resizedFn = setTimeout(() => {
-            this.redrawChart();
-        }, 50)
-    });
+    this.state = {
+      index: 0
+    }
+
+    this.defineScales = this.defineScales.bind(this)
+    this.updateScales = this.updateScales.bind(this)
+    this.drawAxes = this.drawAxes.bind(this)
+    this.updateAxes = this.updateAxes.bind(this)
+    this.drawGrid = this.drawGrid.bind(this)
+    this.updateGrid = this.updateGrid.bind(this)
+    this.drawChart = this.drawChart.bind(this)
   }
 
-  appendSvg () {
-    if (!this.$root) return
-    this.svg = d3.select(this.$root).append('svg')
-      .style('width', this.state.width)
-      .style('height', this.state.height)
+  componentDidMount () {
+    super.componentDidMount()
   }
 
   defineScales () {
-    const { state, props } = this
+    const { state } = this
 
     this.xScale = d3.scaleLinear()
-      .domain([
-        typeof props.bounds.min_x !== 'undefined' ?
-          props.bounds.min_x : d3.min(props.data[state.index], e => e.x_value),
-        typeof props.bounds.max_x !== 'undefined' ?
-          props.bounds.max_x : d3.max(props.data[state.index], e => e.x_value)
-      ])
       .rangeRound([this.margin.left, state.width - this.margin.right])
 
     this.yScale = d3.scaleLinear()
-      .domain([
-        typeof props.bounds.min_y !== 'undefined' ?
-          props.bounds.min_y : d3.min(props.data[state.index], e => e.y_value),
-        typeof props.bounds.max_y !== 'undefined' ?
-          props.bounds.max_y : d3.max(props.data[state.index], e => e.y_value)
-      ])
       .rangeRound([state.height - this.margin.bottom, this.margin.top])
   }
 
@@ -104,18 +70,34 @@ export default class ScatterPlot extends Chart {
 
     this.xScale
       .domain([
-        typeof props.bounds.min_x !== 'undefined' ?
-          props.bounds.min_x : d3.min(props.data[state.index], e => e.x_value),
-        typeof props.bounds.max_x !== 'undefined' ?
-          props.bounds.max_x : d3.max(props.data[state.index], e => e.x_value)
+        (typeof props.bounds.min_x !== 'undefined') ?
+          props.bounds.min_x :
+          d3.min(
+            props.data.filter(e => e.index === state.index),
+            d => d.x_value
+          ),
+        (typeof props.bounds.max_x !== 'undefined') ?
+          props.bounds.max_x :
+          d3.max(
+            props.data.filter(e => e.index === state.index),
+            d => d.x_value
+          )
       ])
 
     this.yScale
       .domain([
-        typeof props.bounds.min_y !== 'undefined' ?
-          props.bounds.min_y : d3.min(props.data[state.index], e => e.y_value),
-        typeof props.bounds.max_y !== 'undefined' ?
-          props.bounds.max_y : d3.max(props.data[state.index], e => e.y_value)
+        (typeof props.bounds.min_y !== 'undefined') ?
+          props.bounds.min_y :
+          d3.min(
+            props.data.filter(e => e.index === state.index),
+            d => d.y_value
+          ),
+        (typeof props.bounds.max_y !== 'undefined') ?
+          props.bounds.max_y :
+          d3.max(
+            props.data.filter(e => e.index === state.index),
+            d => d.y_value
+          )
       ])
   }
 
@@ -149,7 +131,36 @@ export default class ScatterPlot extends Chart {
   		.attr('class', 'axis y-axis')
   		.attr('transform', `translate(${this.margin.left}, 0)`)
   		.call(this.yAxis)
+  }
 
+  updateAxes () {
+    const { props } = this
+
+    if (props.x_ticks) {
+      if (props.x_ticks.mode === 'number')
+        this.xAxis.ticks(props.x_ticks.value)
+      else
+        this.xAxis.tickValues(d3.range(this.xScale.domain()[0], this.xScale.domain()[1] + 1, props.x_ticks.value))
+    }
+
+    if (props.y_ticks) {
+      if (props.y_ticks.mode === 'number')
+        this.yAxis.ticks(props.y_ticks.value)
+      else
+        this.yAxis.tickValues(d3.range(this.yScale.domain()[0], this.yScale.domain()[1] + 1, props.y_ticks.value))
+    }
+
+    this.svg.select('.x-axis')
+      .transition()
+      .duration(this.duration)
+      .ease(d3.easeLinear)
+        .call(this.xAxis)
+
+    this.svg.select('.y-axis')
+      .transition()
+      .duration(this.duration)
+      .ease(d3.easeLinear)
+        .call(this.yAxis)
   }
 
   drawGrid () {
@@ -189,45 +200,59 @@ export default class ScatterPlot extends Chart {
       .call(g => g.select('.domain').remove())
   }
 
-  drawChart () {
-    const { state, props } = this
+  updateGrid () {
+    const { props } = this
 
-    this.defineScales()
-    this.appendSvg()
-    this.drawGrid()
-    this.drawAxes()
+    if (props.x_ticks) {
+      if (props.x_ticks.mode === 'number')
+        this.xGrid.ticks(props.x_ticks.value)
+      else
+        this.xGrid.tickValues(d3.range(this.xScale.domain()[0], this.xScale.domain()[1] + 1, props.x_ticks.value))
+    }
 
-    const { xScale, yScale } = this
-    d3.select('svg').selectAll('circle')
-      .data(this.props.data[state.index]).enter()
-        .append('circle')
-          .attr('cx', d => xScale(d.x_value))
-          .attr('cy', d => yScale(d.y_value))
-          .attr('r', d => typeof d.radius === 'number' ? d.radius : props.radius)
-          .attr('fill', d => typeof d.fill === 'string' ? d.fill : props.fill || 'black')
-          .attr('stroke', d => typeof d.stroke === 'string' ? d.stroke : props.stroke || 'none')
-          .attr('opacity', d => typeof d.opacity === 'number' ? d.opacity : props.opacity || 1)
+    if (props.y_ticks) {
+      if (props.y_ticks.mode === 'number')
+        this.yGrid.ticks(props.y_ticks.value)
+      else
+        this.yGrid.tickValues(d3.range(this.yScale.domain()[0], this.yScale.domain()[1] + 1, props.y_ticks.value))
+    }
+
+    this.svg.select('.x-grid')
+      .transition()
+      .duration(this.duration)
+      .ease(d3.easeLinear)
+        .call(this.xGrid)
+
+    this.svg.select('.y-grid')
+      .transition()
+      .duration(this.duration)
+      .ease(d3.easeLinear)
+        .call(this.yGrid)
   }
 
-  redrawChart () {
-    if (this.getWidth() !== this.state.width) {
-      this.setState({ width: this.getWidth() })
-      d3.select(this.$root).select('svg').remove()
-      this.drawChart()
-    }
+  drawChart () {
+    super.appendSvg()
+    this.defineScales()
+    this.drawGrid()
+    this.drawAxes()
+    this.animate()
   }
 
   async animate (index = 0) {
 
     await this.setState({ index: index })
+
     this.updateScales()
+    this.updateGrid()
+    this.updateAxes()
 
     const { state, props, xScale, yScale } = this
 
-    d3.select('svg').selectAll('circle')
-      .data(this.props.data[state.index])
-        .transition()
-        .duration(typeof props.animation_duration !== 'undefined' ? props.animation_duration : 200)
+    const selection = this.svg.selectAll('circle')
+      .data(this.props.data.filter(e => e.index === state.index))
+
+    selection.transition()
+      .duration(this.duration)
         .attr('cx', d => xScale(d.x_value))
         .attr('cy', d => yScale(d.y_value))
         .attr('r', d => typeof d.radius === 'number' ? d.radius : props.radius)
@@ -235,41 +260,20 @@ export default class ScatterPlot extends Chart {
         .attr('stroke', d => typeof d.stroke === 'string' ? d.stroke : props.stroke || 'none')
         .attr('opacity', d => typeof d.opacity === 'number' ? d.opacity : props.opacity || 1)
 
-    if (props.x_ticks) {
-      if (props.x_ticks.mode === 'number')
-        this.xAxis.ticks(props.x_ticks.value)
-      else
-        this.xAxis.tickValues(d3.range(this.xScale.domain()[0], this.xScale.domain()[1] + 1, props.x_ticks.value))
-    }
+    selection.enter()
+      .append('circle')
+        .attr('cx', d => xScale(d.x_value))
+        .attr('cy', d => yScale(d.y_value))
+        .attr('r', d => typeof d.radius === 'number' ? d.radius : props.radius)
+        .attr('fill', d => typeof d.fill === 'string' ? d.fill : props.fill || 'black')
+        .attr('stroke', d => typeof d.stroke === 'string' ? d.stroke : props.stroke || 'none')
+        .attr('opacity', d => typeof d.opacity === 'number' ? d.opacity : props.opacity || 1)
 
-    if (props.y_ticks) {
-      if (props.y_ticks.mode === 'number')
-        this.yAxis.ticks(props.y_ticks.value)
-      else
-        this.yAxis.tickValues(d3.range(this.yScale.domain()[0], this.yScale.domain()[1] + 1, props.y_ticks.value))
-    }
-
-    this.svg.select('.x-grid')
-      .transition()
-      .duration(typeof props.animation_duration !== 'undefined' ? props.animation_duration : 200)
-        .call(this.xGrid)
-    this.svg.select('.y-grid')
-      .transition()
-      .duration(typeof props.animation_duration !== 'undefined' ? props.animation_duration : 200)
-        .call(this.yGrid)
-    this.svg.select('.x-axis')
-      .transition()
-      .duration(typeof props.animation_duration !== 'undefined' ? props.animation_duration : 200)
-        .call(this.xAxis)
-    this.svg.select('.y-axis')
-      .transition()
-      .duration(typeof props.animation_duration !== 'undefined' ? props.animation_duration : 200)
-        .call(this.yAxis)
-
-    if (this.props.autoplay) {
+    if (props.autoplay) {
       setTimeout(() => {
-        this.animate((this.state.index + 1) % this.props.data.length)
-      }, typeof props.animation_delay !== 'undefined' ? props.animation_delay : 500)
+        if (state.index < d3.max(props.data, d => d.index))
+          this.animate(this.state.index + 1)
+      }, this.delay)
     }
   }
 
@@ -281,10 +285,8 @@ export default class ScatterPlot extends Chart {
   render () {
     const { c, props } = this
 
-    console.log("render")
-
     /* Assign classes */
-    const classes = [c]
+    const classes = c
 
     return <div ref={(n) => this.$root = n} className={classes.join(' ')}>
       <BlockTitle>{props.title}</BlockTitle>
@@ -298,5 +300,27 @@ export default class ScatterPlot extends Chart {
 ScatterPlot.propTypes = {
   title: PropTypes.string.isRequired,
   description: PropTypes.string,
-  data: PropTypes.array
+  height: PropTypes.number,
+  fill: PropTypes.string,
+  stroke: PropTypes.string,
+  radius: PropTypes.number,
+  animation_duration: PropTypes.number,
+  animation_delay: PropTypes.number,
+  y_ticks: PropTypes.shape({
+    mode: PropTypes.string,
+    value: PropTypes.number
+  }),
+  y_ticks: PropTypes.shape({
+    mode: PropTypes.string,
+    value: PropTypes.number
+  }),
+  show_x_grid: PropTypes.bool,
+  show_y_grid: PropTypes.bool,
+  animated: PropTypes.bool,
+  autoplay: PropTypes.bool,
+  data: PropTypes.arrayOf(PropTypes.shape({
+    index: PropTypes.number,
+    x_value: PropTypes.number,
+    y_value: PropTypes.number
+  })),
 }

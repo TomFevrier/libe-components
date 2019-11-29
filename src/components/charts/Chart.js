@@ -11,10 +11,6 @@ import Paragraph from '../text-levels/Paragraph'
  *   DESCRIPTION
  *   A superclass for all charts
  *
- *   PROPS
- *   title, description, data, bounds, x_ticks, y_ticks, show_x_grid,
- *   show_y_grid
- *
  */
 
 export default class Chart extends Component {
@@ -26,9 +22,11 @@ export default class Chart extends Component {
   constructor () {
     super()
     this.c = 'lblb-chart'
+    this.getWidth = this.getWidth.bind(this)
     this.appendSvg = this.appendSvg.bind(this)
     this.defineScales = this.defineScales.bind(this)
     this.drawChart = this.drawChart.bind(this)
+    this.redrawChart = this.redrawChart.bind(this)
     this.drawAxes = this.drawAxes.bind(this)
     this.drawGrid = this.drawGrid.bind(this)
   }
@@ -38,13 +36,19 @@ export default class Chart extends Component {
   }
 
   componentDidMount () {
-    let resizedFn;
+    let onResize;
     window.addEventListener('resize', () => {
-        clearTimeout(resizedFn);
-        resizedFn = setTimeout(() => {
-            this.redrawChart();
-        }, 50)
+        clearTimeout(onResize);
+        onResize = setTimeout(this.redrawChart, 50)
     });
+    this.setState({ width: this.getWidth(), height: this.props.height}, () => {
+      this.drawChart()
+    })
+  }
+
+  shouldComponentUpdate (prev, next) {
+    // [WIP]
+    return false
   }
 
   appendSvg () {
@@ -54,64 +58,28 @@ export default class Chart extends Component {
       .style('height', this.state.height)
   }
 
-  defineScales () {
-    const { state, props } = this
+  drawChart() {}
 
-    this.xScale = d3.scaleLinear()
-      .domain([
-        typeof props.bounds.min_x !== 'undefined' ?
-          props.bounds.min_x : d3.min(props.data[state.index], e => e.x_value),
-        typeof props.bounds.max_x !== 'undefined' ?
-          props.bounds.max_x : d3.max(props.data[state.index], e => e.x_value)
-      ])
-      .rangeRound([this.margin.left, state.width - this.margin.right])
-
-    this.yScale = d3.scaleLinear()
-      .domain([
-        typeof props.bounds.min_y !== 'undefined' ?
-          props.bounds.min_y : d3.min(props.data[state.index], e => e.y_value),
-        typeof props.bounds.max_y !== 'undefined' ?
-          props.bounds.max_y : d3.max(props.data[state.index], e => e.y_value)
-      ])
-      .rangeRound([state.height - this.margin.bottom, this.margin.top])
+  redrawChart () {
+    if (this.getWidth() !== this.state.width) {
+      this.setState({ width: this.getWidth() })
+      d3.select(this.$root).select('svg').remove()
+      this.drawChart()
+    }
   }
 
-  updateScales () {
-    const { state, props } = this
+  // render () {
+  //   const { c, props } = this
+  //
+  //   /* Assign classes */
+  //   const classes = c
+  //
+  //   return <div ref={(n) => this.$root = n} className={classes.join(' ')}>
+  //     <BlockTitle>{props.title}</BlockTitle>
+  //     <Paragraph>{props.description}</Paragraph>
+  //   </div>
+  // }
 
-    this.xScale
-      .domain([
-        typeof props.bounds.min_x !== 'undefined' ?
-          props.bounds.min_x : d3.min(props.data[state.index], e => e.x_value),
-        typeof props.bounds.max_x !== 'undefined' ?
-          props.bounds.max_x : d3.max(props.data[state.index], e => e.x_value)
-      ])
-
-    this.yScale
-      .domain([
-        typeof props.bounds.min_y !== 'undefined' ?
-          props.bounds.min_y : d3.min(props.data[state.index], e => e.y_value),
-        typeof props.bounds.max_y !== 'undefined' ?
-          props.bounds.max_y : d3.max(props.data[state.index], e => e.y_value)
-      ])
-  }
-
-  /* * * * * * * * * * * * * * * * *
-   *
-   * RENDER
-   *
-   * * * * * * * * * * * * * * * * */
-  render () {
-    const { c, props } = this
-
-    /* Assign classes */
-    const classes = [c]
-
-    return <div ref={(n) => this.$root = n} className={classes.join(' ')}>
-      <BlockTitle>{props.title}</BlockTitle>
-      <Paragraph>{props.description}</Paragraph>
-    </div>
-  }
 }
 
 /* * * * * Prop types * * * * */
