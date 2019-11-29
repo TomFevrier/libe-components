@@ -74,7 +74,7 @@ export default class BarChartRace extends Chart {
   }
 
   drawAxes () {
-    const { state, props } = this
+    const { props } = this
 
     this.xAxis = d3.axisTop(this.xScale)
       .tickSizeOuter(0)
@@ -187,12 +187,12 @@ export default class BarChartRace extends Chart {
     bar.append('text')
       .attr('x', d => xScale(d.value) - xScale(0))
       .attr('y', yScale.bandwidth() / 2 + 4)
-      .text(d => `${d.name} ${d.value / 1000}`)
       .attr('text-anchor', 'end')
+      .property('_currentValue', d => d.value)
   }
 
   onUpdate (update) {
-    const { props, xScale, yScale } = this
+    const { xScale, yScale } = this
 
     update.transition()
       .duration(this.duration)
@@ -208,7 +208,12 @@ export default class BarChartRace extends Chart {
       .duration(this.duration)
       .ease(d3.easeLinear)
         .attr('x', d => xScale(d.value) - xScale(0))
-        .text(d => `${d.name} ${d.value / 1000}`)
+        // [WIP] (NaN for Coca-Cola)
+        .textTween(d => {
+          const interpolation = d3.interpolate(this._currentValue, d.value)
+          this._currentValue = d.value
+          return (t) => `${d.name} ${d3.format('.2f')(interpolation(t / 1000))}`
+        })
   }
 
   onExit (exit) {

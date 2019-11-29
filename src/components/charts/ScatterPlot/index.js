@@ -308,7 +308,7 @@ ScatterPlot.propTypes = {
   radius: PropTypes.number,
   animation_duration: PropTypes.number,
   animation_delay: PropTypes.number,
-  y_ticks: PropTypes.shape({
+  x_ticks: PropTypes.shape({
     mode: PropTypes.string,
     value: PropTypes.number
   }),
