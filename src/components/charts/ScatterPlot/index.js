@@ -38,6 +38,8 @@ export default class ScatterPlot extends Chart {
     this.duration = typeof props.animation_duration !== 'undefined' ? props.animation_duration : 200
     this.delay = typeof props.animation_delay !== 'undefined' ? props.animation_delay : 500
 
+    // [WIP] Sort data to prevent smaller circles from being hidden under large ones
+
     this.state = {
       index: 0
     }
